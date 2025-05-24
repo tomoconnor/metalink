@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -21,15 +22,42 @@ type Metadata struct {
 }
 
 func main() {
+	// Load API key from environment
+	apiKey := os.Getenv("API_KEY")
+	if apiKey == "" {
+		log.Fatal("API_KEY environment variable not set")
+	}
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	// API Key auth middleware
+	e.Use(apiKeyAuthMiddleware(apiKey))
+
+	// Routes
 	e.GET("/metadata", getMetadataHandler)
 
 	// Start server
-	if err := e.Start(":8080"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	if err := e.Start(":" + port); err != nil {
 		log.Fatalf("failed to start server: %v", err)
+	}
+}
+
+// apiKeyAuthMiddleware checks for a valid X-API-Key header
+func apiKeyAuthMiddleware(expectedKey string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			key := c.Request().Header.Get("X-API-Key")
+			if key == "" || key != expectedKey {
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid or missing API key"})
+			}
+			return next(c)
+		}
 	}
 }
 
