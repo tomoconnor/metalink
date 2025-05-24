@@ -79,6 +79,8 @@ func getMetadataHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to create request"})
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
+	req.Header.Set("Accept-Language", "en-GB")
+	req.Header.Set("Cache-Control", "no-cache")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
